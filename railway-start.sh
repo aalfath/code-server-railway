@@ -6,18 +6,15 @@ HOME_DIR=/home/coder
 PORT="${PORT:-8080}"
 
 if [ "$(id -u)" = "0" ]; then
-  # First boot on an empty (root-owned) volume, or a volume from the old
-  # image-based template: hand the whole home directory to `coder` once.
-  if [ "$(stat -c %u "$HOME_DIR")" != "1000" ] || [ ! -f "$HOME_DIR/.railway-owned" ]; then
-    echo "railway-start: setting ownership of $HOME_DIR to coder (one time)"
-    chown -R 1000:1000 "$HOME_DIR"
-  fi
+  # Hand anything not owned by `coder` (an empty root-owned volume on first
+  # boot, files from the old image-based template, files created over
+  # `railway ssh` as root) back to `coder`. Cheap when nothing needs changing.
+  find "$HOME_DIR" -xdev \( ! -user 1000 -o ! -group 1000 \) -exec chown -h 1000:1000 {} + 2>/dev/null || true
   for d in "$HOME_DIR/project" "$HOME_DIR/.config/code-server" "$HOME_DIR/.local/share/code-server"; do
     mkdir -p "$d"
   done
   chown 1000:1000 "$HOME_DIR" "$HOME_DIR/project" "$HOME_DIR/.config" "$HOME_DIR/.config/code-server" \
     "$HOME_DIR/.local" "$HOME_DIR/.local/share" "$HOME_DIR/.local/share/code-server"
-  touch "$HOME_DIR/.railway-owned" && chown 1000:1000 "$HOME_DIR/.railway-owned"
   # Keep the image's shell defaults (.bashrc, .profile) on a fresh volume.
   for f in .bashrc .profile .bash_logout; do
     if [ ! -e "$HOME_DIR/$f" ] && [ -e "/etc/skel/$f" ]; then
