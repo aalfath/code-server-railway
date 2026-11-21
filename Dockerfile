@@ -1,5 +1,5 @@
 # code-server for Railway: official image, pinned by version and digest.
-FROM codercom/code-server:4.145.2@sha256:09565f9e07f5624554e295e8bab0e2fec4a7c533eb3cff459ed6596a4d3d7c1c
+FROM codercom/code-server:4.146.0@sha256:fc708b18f6c613b5a9d00f1d1801e58376d3df9c5b5de77f5c02d67b711f99c9
 
 # Railway mounts volumes owned by root. The start script runs as root only long
 # enough to prepare /home/coder, then runs code-server as the unprivileged `coder` user.
