@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-21: restart after a crash or out-of-memory kill
+
+- No breaking changes. Your files, extensions, settings and `PASSWORD` on the `/home/coder` volume are kept, and code-server stays at 4.146.0 (same image digest).
+- **Fix:** when code-server's server process was killed, most often by the out-of-memory killer on a small service (Railway's Free plan gives 0.5 GB; code-server uses about 0.8–1 GB with a project open), code-server's own wrapper exited with code 0. Railway's default "On Failure" restart policy took that as a clean stop, so the service stayed down (502) until restarted by hand. The start script now runs code-server as a child and exits with code 1 whenever it stops without Railway asking it to, so Railway restarts it within seconds. A normal stop or redeploy (SIGTERM) still exits cleanly.
+- `dumb-init` now runs as PID 1 in front of the start script (it was already in the image), so signals are forwarded and stray processes are reaped as before.
+- Tip: if your service keeps restarting, give it at least 1 GB of RAM (Service → Settings → Resource limits on paid plans).
+
 ## 2026-11-21: code-server 4.146.0
 
 - No breaking changes for this template. Your files, extensions and settings on the `/home/coder` volume and your `PASSWORD` are kept.
