@@ -21,8 +21,38 @@ if [ "$(id -u)" = "0" ]; then
       cp "/etc/skel/$f" "$HOME_DIR/$f" && chown 1000:1000 "$HOME_DIR/$f"
     fi
   done
-  exec setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$HOME_DIR" USER=coder \
-    /usr/bin/entrypoint.sh --bind-addr "0.0.0.0:$PORT" "$HOME_DIR/project"
+  set -- setpriv --reuid=1000 --regid=1000 --init-groups env HOME="$HOME_DIR" USER=coder \
+    /usr/bin/entrypoint.sh
+else
+  set -- /usr/bin/entrypoint.sh
 fi
 
-exec /usr/bin/entrypoint.sh --bind-addr "0.0.0.0:$PORT" "$HOME_DIR/project"
+# Run code-server as a child instead of exec'ing it. If its server process is
+# killed (for example by the out-of-memory killer when the service has too
+# little RAM), code-server's own wrapper exits with code 0, and Railway's
+# default "On Failure" restart policy treats that as a clean stop: the service
+# would stay down until restarted by hand. So unless Railway asked us to stop
+# (SIGTERM/SIGINT), exit non-zero, and Railway restarts the service.
+set +e
+stopping=0
+child=
+on_stop() {
+  stopping=1
+  if [ -n "$child" ]; then kill -TERM "$child" 2>/dev/null; fi
+}
+trap on_stop TERM INT
+
+"$@" --bind-addr "0.0.0.0:$PORT" "$HOME_DIR/project" &
+child=$!
+rc=0
+while :; do
+  wait "$child"
+  rc=$?
+  kill -0 "$child" 2>/dev/null || break
+done
+
+if [ "$stopping" = 1 ]; then
+  exit "$rc"
+fi
+echo "railway-start: code-server stopped unexpectedly (exit $rc); exiting 1 so Railway restarts the service" >&2
+exit 1

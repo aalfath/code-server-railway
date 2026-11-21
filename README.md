@@ -14,6 +14,7 @@ This repo is the source of the [code-server Railway template](https://railway.co
 
 - `railway-start.sh` runs as root only to hand the Railway volume (mounted as root) to the `coder` user, then starts code-server as `coder` through the image's own entrypoint, so `/entrypoint.d` start-up scripts still work.
 - Your projects live in `/home/coder/project`; settings, extensions and config live under `/home/coder`. All of it is on the volume.
+- If code-server's server process dies (for example killed for using too much memory), the start script exits with code 1, so Railway's "On Failure" restart policy brings the service back. code-server needs about 1 GB of RAM with a project open; with less (Railway's Free plan gives 0.5 GB per service) it may restart while you work.
 
 ## Variables
 

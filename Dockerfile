@@ -8,4 +8,4 @@ COPY --chmod=755 railway-start.sh /usr/local/bin/railway-start.sh
 
 ENV PORT=8080
 EXPOSE 8080
-ENTRYPOINT ["/usr/local/bin/railway-start.sh"]
+ENTRYPOINT ["/usr/bin/dumb-init", "/usr/local/bin/railway-start.sh"]
